@@ -1,0 +1,30 @@
+---
+- hosts: localhost
+  gather_facts: false
+  roles:
+    - role: ../..
+  vars:
+    nutanix_host: 10.38.186.37
+    nutanix_username: admin
+    nutanix_password: nx2Tech106!
+    nutanix_subnets:
+      # - name: Primary
+      #   state: absent
+      # - name: Secondary
+      #   state: absent
+      - name: Primary
+        state: present
+        virtual_switch: vs0
+        vlan_id: 0
+        net_address: 10.38.186.0/25
+        gateway: 10.38.186.1
+        dns_server_list:
+          - 10.42.194.10
+        domain_name: ntnxlab.local
+        domain_search: ntnxlab.local
+        ipam:
+          - start_ip: 10.38.185.50
+            end_ip: 10.38.185.126
+      # - name: Secondary
+      #   state: present
+      #   vlan_id: 1853

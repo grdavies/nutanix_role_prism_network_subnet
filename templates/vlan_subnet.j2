@@ -1,0 +1,19 @@
+---
+  virtual_switch:
+    name: "{{ outer_item.virtual_switch | default(nutanix_default_virtual_switch) }}"
+  vlan_id: {{ outer_item.vlan_id }}
+  cluster:
+    name: "{{ cluster_name | default(nutanix_current_cluster_name) }}"
+{% if outer_item.net_address | default('') != "" and outer_item.gateway | default('') != "" %}
+  ipam:
+    network_ip: "{{ outer_item.net_address | ansible.utils.ipaddr('network') }}"
+    network_prefix: "{{ outer_item.net_address | ansible.utils.ipaddr('prefix') }}"
+    gateway_ip: "{{ outer_item.gateway }}"
+    ip_pools: {{ outer_item.ipam | default([]) }}
+{% if outer_item.dns_server_list | length > 0 or outer_item.domain_name | default('') != ""  or outer_item.domain_search | default('') != "" %}
+    dhcp:
+      dns_servers: "{{ outer_item.dns_server_list | default([]) }}"
+      domain_name: "{{ outer_item.domain_name | default('') }}"
+      domain_search: "{{ outer_item.domain_search | default('') }}"
+{% endif %}
+{% endif %}

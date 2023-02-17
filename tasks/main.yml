@@ -1,0 +1,28 @@
+---
+# tasks file for nutanix_role_prism_network_subnet
+# - name: Check variables
+#   include_tasks: check_variables.yml
+#   loop: "{{ nutanix_subnets }}"
+#   loop_control:
+#     loop_var: outer_item
+
+- include_tasks: setup_api.yml
+
+- name: Get PE cluster name
+  include_tasks: get_cluster_name.yml
+  when:
+    - nutanix_endpoint_prism_type == 'pe'
+
+- name: Gather cluster subnets
+  ntnx_subnets_info:
+    nutanix_host: "{{ nutanix_host }}"
+    nutanix_username: "{{ nutanix_username }}"
+    nutanix_password: "{{ nutanix_password }}"
+    validate_certs: "{{ validate_certs }}"
+  register: nutanix_current_subnets
+
+- name: Inputs for external subnets task
+  include_tasks: vlan_subnet.yml
+  loop: "{{ nutanix_subnets }}"
+  loop_control:
+    loop_var: outer_item

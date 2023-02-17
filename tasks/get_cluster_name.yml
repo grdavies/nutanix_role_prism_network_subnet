@@ -1,0 +1,17 @@
+---
+- name: Get Nutanix cluster details
+  uri:
+    url: "https://{{nutanix_host}}:{{nutanix_port}}/PrismGateway/services/rest/v2.0/cluster"
+    method: GET
+    validate_certs: "{{ validate_certs }}"
+    body_format: json
+    headers:
+      Authorization: "{{ nutanix_api_auth }}"
+    return_content: yes
+  register: nutanix_prism_cluster_current_config
+
+- name: Set nutanix_current_cluster_name
+  set_fact:
+    nutanix_current_cluster_name: "{{ nutanix_prism_cluster_current_config.json.name }}"
+  when:
+    - nutanix_prism_cluster_current_config is defined

@@ -1,0 +1,161 @@
+---
+- name: "name variable check"
+  ansible.builtin.fail:
+    msg: "the name variable has to be defined."
+  when:
+    - outer_item.name | default("") == ""
+
+- name: "state check for '{{ outer_item.name }}'"
+  ansible.builtin.fail:
+    msg: "Either state is not defined or is not an allowed value ['present', 'absent'] for subnet '{{ outer_item.name }}'"
+  when:
+    - outer_item.state is not defined
+    - outer_item.state not in ['present', 'absent']
+
+- name: "vlan_id check for '{{ outer_item.name }}'"
+  ansible.builtin.fail:
+    msg: "vlan_id has to be defined for subnet '{{ outer_item.name }}'"
+  when:
+    - outer_item.vlan_id | default("") == ""
+    - outer_item.state == "present"
+
+- name: Reset fact current_network_uuid
+  set_fact:
+    nutanix_current_network_uuid: "None"
+
+- name: search current external subnets for "{{ outer_item.name }}"
+  set_fact:
+    nutanix_current_network_uuid: "{{ item.metadata.uuid }}"
+  when: item.status.name == outer_item.name
+  with_items: "{{ nutanix_current_subnets.response.entities }}"
+
+- name: Create external subnet without AHV IPAM "{{ outer_item.name }}"
+  ntnx_subnets:
+    nutanix_host: "{{ nutanix_host }}"
+    nutanix_username: "{{ nutanix_username }}"
+    nutanix_password: "{{ nutanix_password }}"
+    validate_certs: "{{ validate_certs }}"
+    state: present
+    wait: True
+    name: "{{ outer_item.name }}"
+    vlan_subnet:
+      virtual_switch:
+        name: "{{ outer_item.virtual_switch | default(nutanix_default_virtual_switch) }}"
+      vlan_id: "{{ outer_item.vlan_id }}"
+      cluster:
+        name: "{{ cluster.name | default(nutanix_current_cluster_name) }}"
+  register: nutanix_subnet_create
+  when:
+    - nutanix_current_network_uuid == "None"
+    - outer_item.state == "present"
+    - not outer_item.net_address | default('') | ansible.utils.ipaddr
+    - not outer_item.gateway | default('') | ansible.utils.ipaddr
+
+- name: Create external subnet with AHV IPAM "{{ outer_item.name }}"
+  ntnx_subnets:
+    nutanix_host: "{{ nutanix_host }}"
+    nutanix_username: "{{ nutanix_username }}"
+    nutanix_password: "{{ nutanix_password }}"
+    validate_certs: "{{ validate_certs }}"
+    state: present
+    wait: True
+    name: "{{ outer_item.name }}"
+    vlan_subnet: # {{ lookup('template','vlan_subnet.j2') | from_yaml | to_yaml }}
+      virtual_switch:
+        name: "{{ outer_item.virtual_switch | default(nutanix_default_virtual_switch) }}"
+      vlan_id: "{{ outer_item.vlan_id }}"
+      cluster:
+        name: "{{ cluster.name | default(nutanix_current_cluster_name) }}"
+      ipam:
+        network_ip: "{{ outer_item.net_address | ansible.utils.ipaddr('network') }}"
+        network_prefix: "{{ outer_item.net_address | ansible.utils.ipaddr('prefix') }}"
+        gateway_ip: "{{ outer_item.gateway }}"
+        ip_pools: "{{ outer_item.pools | default([]) }}"
+        dhcp:
+          dns_servers: "{{ cluster.dns | default([]) }}"
+          domain_name: "{{ cluster.domain | default('') }}"
+          domain_search: "{{ cluster.domain_search | default('') }}"
+  register: nutanix_subnet_create
+  when:
+    - nutanix_current_network_uuid == "None"
+    - outer_item.state == "present"
+    - outer_item.net_address | default('') | ansible.utils.ipaddr
+    - outer_item.gateway | default('') | ansible.utils.ipaddr
+
+- debug:
+    var: nutanix_subnet_create
+  when: nutanix_debug
+
+# - name: Update external subnet without AHV IPAM "{{ outer_item.name }}"
+#   ntnx_subnets:
+#     nutanix_host: "{{ nutanix_host }}"
+#     nutanix_username: "{{ nutanix_username }}"
+#     nutanix_password: "{{ nutanix_password }}"
+#     validate_certs: "{{ validate_certs }}"
+#     state: present
+#     wait: True
+#     name: "{{ outer_item.name }}"
+#     subnet_uuid: "{{ nutanix_current_network_uuid }}"
+#     vlan_subnet: # "{{lookup('template','vlan_subnet.j2') | from_yaml | to_yaml}}"
+#       virtual_switch:
+#         name: "{{ outer_item.virtual_switch | default(nutanix_default_virtual_switch) }}"
+#       vlan_id: "{{ outer_item.vlan_id }}"
+#       cluster:
+#         name: "{{ cluster.name | default(nutanix_current_cluster_name) }}"
+#   register: nutanix_subnet_update
+#   when:
+#     - nutanix_current_network_uuid != "None"
+#     - outer_item.state == "present"
+#     - not outer_item.net_address | ansible.utils.ipaddr
+#     - not outer_item.gateway | ansible.utils.ipaddr
+#
+# - name: Update external subnet with AHV IPAM "{{ outer_item.name }}"
+#   ntnx_subnets:
+#     nutanix_host: "{{ nutanix_host }}"
+#     nutanix_username: "{{ nutanix_username }}"
+#     nutanix_password: "{{ nutanix_password }}"
+#     validate_certs: "{{ validate_certs }}"
+#     state: present
+#     wait: True
+#     name: "{{ outer_item.name }}"
+#     subnet_uuid: "{{ nutanix_current_network_uuid }}"
+#     vlan_subnet: # "{{lookup('template','vlan_subnet.j2') | from_yaml | to_yaml}}"
+#       virtual_switch:
+#         name: "{{ outer_item.virtual_switch | default(nutanix_default_virtual_switch) }}"
+#       vlan_id: "{{ outer_item.vlan_id }}"
+#       cluster:
+#         name: "{{ cluster.name | default(nutanix_current_cluster_name) }}"
+#       ipam:
+#         network_ip: "{{ outer_item.net_address | ansible.utils.ipaddr('network') }}"
+#         network_prefix: "{{ outer_item.net_address | ansible.utils.ipaddr('prefix') }}"
+#         gateway_ip: "{{ outer_item.gateway }}"
+#         ip_pools: "{{ outer_item.pools | default([]) }}"
+#         dhcp:
+#           dns_servers: "{{ cluster.dns | default([]) }}"
+#           domain_name: "{{ cluster.domain | default('') }}"
+#           domain_search: "{{ cluster.domain_search | default('') }}"
+#   register: nutanix_subnet_update
+#   when:
+#     - nutanix_current_network_uuid != "None"
+#     - outer_item.state == "present"
+#     - outer_item.net_address | ansible.utils.ipaddr
+#     - outer_item.gateway | ansible.utils.ipaddr
+
+- name: Delete external subnet "{{ outer_item.name }}"
+  ntnx_subnets:
+    nutanix_host: "{{ nutanix_host }}"
+    nutanix_username: "{{ nutanix_username }}"
+    nutanix_password: "{{ nutanix_password }}"
+    validate_certs: "{{ validate_certs }}"
+    state: absent
+    wait: True
+    name: "{{ outer_item.name }}"
+    subnet_uuid: "{{ nutanix_current_network_uuid }}"
+  register: nutanix_subnet_delete
+  when:
+    - nutanix_current_network_uuid != "None"
+    - outer_item.state == "absent"
+
+- debug:
+    var: nutanix_subnet_delete
+  when: nutanix_debug

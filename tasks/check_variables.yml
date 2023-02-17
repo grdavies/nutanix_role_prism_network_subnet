@@ -1,0 +1,7 @@
+---
+  - name: Fail if cluster_name is not defined
+    ansible.builtin.fail:
+      msg: "cluster_name is not defined for subnet '{{ outer_item.name }}'"
+    when:
+      - nutanix_endpoint_prism_type != 'pe'
+      - outer_item.cluster_name not defiend or outer_item.cluster_name == ""
