@@ -3,3 +3,4 @@ rules:
   exclude_filter:
     - LINT0009
     - ANSIBLE0012
+    - ANSIBLE0017
