@@ -30,7 +30,7 @@
   with_items: "{{ nutanix_current_subnets.response.entities }}"
 
 - name: Create external subnet without AHV IPAM "{{ outer_item.name }}"
-  ntnx_subnets:
+  nutanix.ncp.ntnx_subnets:
     nutanix_host: "{{ nutanix_host }}"
     nutanix_username: "{{ nutanix_username }}"
     nutanix_password: "{{ nutanix_password }}"
@@ -52,7 +52,7 @@
     - not outer_item.gateway | default('') | ansible.utils.ipaddr
 
 - name: Create external subnet with AHV IPAM "{{ outer_item.name }}"
-  ntnx_subnets:
+  nutanix.ncp.ntnx_subnets:
     nutanix_host: "{{ nutanix_host }}"
     nutanix_username: "{{ nutanix_username }}"
     nutanix_password: "{{ nutanix_password }}"
