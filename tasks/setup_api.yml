@@ -44,7 +44,7 @@
 
 - name: Test logon to API
   uri:
-    url: "https://{{nutanix_host}}:{{nutanix_port}}/api/nutanix/v3/users/me"
+    url: "https://{{ nutanix_host }}:{{ nutanix_port }}/api/nutanix/v3/users/me"
     method: GET
     validate_certs: "{{ validate_certs }}"
     body_format: json

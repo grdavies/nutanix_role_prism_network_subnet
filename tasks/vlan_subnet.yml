@@ -72,9 +72,9 @@
         gateway_ip: "{{ outer_item.gateway }}"
         ip_pools: "{{ outer_item.pools | default([]) }}"
         dhcp:
-          dns_servers: "{{ cluster.dns | default([]) }}"
-          domain_name: "{{ cluster.domain | default('') }}"
-          domain_search: "{{ cluster.domain_search | default('') }}"
+          dns_servers: "{{ outer_item.dns | default([]) }}"
+          domain_name: "{{ outer_item.domain | default('') }}"
+          domain_search: "{{ outer_item.domain_search | default('') }}"
   register: nutanix_subnet_create
   when:
     - nutanix_current_network_uuid == "None"

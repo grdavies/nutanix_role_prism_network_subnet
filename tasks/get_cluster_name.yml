@@ -1,7 +1,7 @@
 ---
 - name: Get Nutanix cluster details
   uri:
-    url: "https://{{nutanix_host}}:{{nutanix_port}}/PrismGateway/services/rest/v2.0/cluster"
+    url: "https://{{ nutanix_host }}:{{ nutanix_port }}/PrismGateway/services/rest/v2.0/cluster"
     method: GET
     validate_certs: "{{ validate_certs }}"
     body_format: json
